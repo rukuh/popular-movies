@@ -4,7 +4,8 @@ const _ = require('lodash')
 const tmdb = require('./lib/tmdb')
 const omdb = require('./lib/omdb')
 const metacritic = require('./lib/metacritic')
-const anthropic = require('./lib/anthropic')
+// const anthropic = require('./lib/anthropic')
+const google = require('./lib/google')
 
 const getTmdb = function (tmdbId) {
   return tmdb.getMovie(tmdbId)
@@ -97,9 +98,9 @@ When evaluating the popularity of a movie, consider:
 
 A null value means that the data could not be found or isn't publicly available.
 
-Explain your reasoning first, then return the IDs of the most popular movies, in sorted order, in a JSON array. Comments in the JSON is invalid JSON.
+Explain your reasoning first, then return the IDs of the most popular movies, in sorted order, in a JSON array. Do not use comments in the JSON.
 
-Include, at most, 15 movies.
+Include, at most, 5 movies.
 
 Your response should look similar to:
 \`\`\`json
@@ -131,7 +132,8 @@ Your response should look similar to:
     ])
   })
 
-  const response = await anthropic.prompt(system, JSON.stringify(moviesData))
+  // const response = await anthropic.prompt(system, JSON.stringify(moviesData))
+  const response = await google.prompt(system, JSON.stringify(moviesData))
 
   const suggestedMovies = _.map(response, id => movies.find(movie => movie.id === id))
 
@@ -202,6 +204,7 @@ const logger = function (movies) {
     'popularity',
     'vote_average',
     'vote_count',
+    'genre_ids',
     'genres',
     'budget',
     'revenue',
@@ -250,9 +253,10 @@ module.exports = (function () {
       .then(sanatizeForResponse)
   }
 
-  ListBuilder.prototype.evaluate = function () {
+  ListBuilder.prototype.evaluate = function (opts = {}) {
     return Promise
       .resolve(getMovies())
+      .then(rejectArrayValues('genres', opts.exclude_genres))
       .then(evaluateMovies)
       .then(sanatizeForResponse)
   }
