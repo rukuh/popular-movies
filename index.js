@@ -82,6 +82,14 @@ const sanatizeForResponse = function (movies) {
     })
 }
 
+const filterByGenre = function (excl_genre_id = 0) {
+  return function (movies) {
+    return _.filter(movies, function (movie) {
+      return !_.get(movie, 'genre_ids', []).includes(excl_genre_id)
+    })
+  }
+}
+
 const filterByMinValue = function (key, value = 0) {
   return function (movies) {
     return _.filter(movies, function (movie) {
@@ -119,7 +127,8 @@ const logger = function (movies) {
     'rt_score',
     'popularity',
     'vote_average',
-    'vote_count'
+    'vote_count',
+    'genre_ids'
   ])
 }
 
@@ -158,6 +167,7 @@ module.exports = (function () {
   ListBuilder.prototype.filter = function (opts = {}) {
     return Promise
       .resolve(getMovies())
+      .then(filterByGenre(opts.excl_genre_id))
       .then(filterByMinValue('metacritic_score', opts.min_metacritic_score))
       .then(filterByMinValue('rt_score', opts.min_rt_score))
       .then(filterByMinValue('imdb_rating', opts.min_imdb_rating))

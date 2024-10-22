@@ -4,6 +4,7 @@
   "description": "A library to help determine what movies to watch",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
     "test": "./bin/test",
     "deploy": "./bin/deploy.js"
   },
@@ -32,6 +33,7 @@
     "bluebird": "^3.7.2",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.0.3",
+    "express": "^4.21.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "request": "^2.88.2"

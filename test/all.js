@@ -32,6 +32,11 @@ describe('all', function () {
     expect(results.rt_score).gt(1)
   })
 
+  it('should get tmdb genres', async function () {
+    const results = await tmdb.getGenres()
+    expect(results.genres).to.not.be.empty()
+  })
+
   it('should get tmdb movie', async function () {
     const movie = await tmdb.searchMovie(MOVIE_TITLE)
     expect(movie.id).to.equal(TMDB_ID)
