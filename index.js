@@ -3,7 +3,6 @@ const moment = require('moment')
 const _ = require('lodash')
 const tmdb = require('./lib/tmdb')
 const omdb = require('./lib/omdb')
-const imdb = require('./lib/imdb')
 const metacritic = require('./lib/metacritic')
 const anthropic = require('./lib/anthropic')
 
@@ -34,24 +33,6 @@ const getTmdbDetails = function (movies) {
               .value()
           })
         })
-    })
-}
-
-const getImdbRatings = function (movies) {
-  return Promise
-    .resolve(movies)
-    .map(function (movie) {
-      if (movie.imdb_rating && movie.imdb_rating !== 'N/A') {
-        return movie
-      }
-
-      return Promise
-        .resolve(imdb(movie.imdb_id))
-        .then(function (ratings) {
-          return _.assign(movie, ratings)
-        })
-    }, {
-      concurrency: 1
     })
 }
 
@@ -251,7 +232,6 @@ module.exports = (function () {
       .then(getTmdbDetails)
       .then(getMetacriticRatings)
       .then(getOmdbRatings)
-      .then(getImdbRatings)
       .tap(logger)
       .tap(function (movies) {
         allMovies = movies

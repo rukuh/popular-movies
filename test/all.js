@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 const expect = require('must')
 const Index = require('../index')
-const imdb = require('../lib/imdb')
 const metacritic = require('../lib/metacritic')
 const omdb = require('../lib/omdb')
 const tmdb = require('../lib/tmdb')
@@ -18,12 +17,6 @@ describe('all', function () {
   const IMDB_ID = 'tt11564570'
   const TMDB_ID = 661374
   const MOVIE_TITLE = 'Glass Onion: A Knives Out Mystery'
-
-  it('should get an IMDB rating', async function () {
-    const results = await imdb(IMDB_ID)
-    expect(results.imdb_rating).gt(1)
-    expect(results.imdb_votes).gt(1000)
-  })
 
   it('should get an omdb response', async function () {
     const results = await omdb(IMDB_ID)
