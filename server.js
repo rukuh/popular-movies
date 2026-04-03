@@ -1,6 +1,7 @@
 const express = require('express')
 const flatCache = require('flat-cache')
 const Index = require('./index.js')
+const AnimeIndex = require('./lib/anime/index.js')
 const path = require('path')
 
 const app = express()
@@ -13,13 +14,17 @@ app.get('/health', (req, res) => {
   res.status(200).send('Ok');
 });
 
-app.get('/movies', async function (req, res) {
+const handleRequest = async function (req, res, listBuilderClass, cachePrefix) {
   // 2. Create a unique key based on the user's query
-  // e.g., "genre=action&year=2023" becomes the key
-  const cacheKey = JSON.stringify(req.query);
+  // e.g., "movies_genre=action&year=2023" becomes the key
+  const cacheKey = `${cachePrefix}_${JSON.stringify(req.query)}`;
 
   // 3. Check Cache
   const now = Date.now();
+  if (req.query.clear_cache === 'true') {
+    cache.removeKey(cacheKey);
+    console.log(`Cache cleared for key: ${cacheKey}`);
+  }
   const cachedItem = cache.getKey(cacheKey);
 
   if (cachedItem && cachedItem.expiry > now) {
@@ -44,27 +49,30 @@ app.get('/movies', async function (req, res) {
   }));
 
   try {
-    const listBuilder = new Index()
-    // const movies = await listBuilder.filter(req.query)
-    const movies = await listBuilder.evaluate(req.query)
+    const listBuilder = new listBuilderClass()
+    const results = await listBuilder.evaluate(req.query)
 
     // 5. Save result to cache (Expire in 24 hours)
     cache.setKey(cacheKey, {
-      value: movies,
+      value: results,
       expiry: now + (24 * 60 * 60 * 1000) // 24 Hours
     });
     cache.save(true); // Persist to disk
 
-    res.json(movies)
+    res.json(results)
   } catch (error) {
     console.error(JSON.stringify({
       level: 'error',
+      event: 'request_failed',
+      cacheKey,
       message: error.message,
-      stack: error.stack,
       timestamp: new Date().toISOString()
     }));
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
-})
+}
+
+app.get('/movies', (req, res) => handleRequest(req, res, Index, 'movies'))
+app.get('/anime', (req, res) => handleRequest(req, res, AnimeIndex, 'anime'))
 
 app.listen(3000, () => console.log('Server running on 3000'))

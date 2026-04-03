@@ -4,8 +4,7 @@ const _ = require('lodash')
 const tmdb = require('./lib/tmdb')
 const omdb = require('./lib/omdb')
 const metacritic = require('./lib/metacritic')
-// const anthropic = require('./lib/anthropic')
-const google = require('./lib/google')
+const ai = require('./lib/ai')
 
 const getTmdb = function (tmdbId) {
   return tmdb.getMovie(tmdbId)
@@ -100,7 +99,7 @@ A null value means that the data could not be found or isn't publicly available.
 
 Explain your reasoning first, then return the IDs of the most popular movies, in sorted order, in a JSON array. Do not use comments in the JSON.
 
-Include, at most, 5 movies.
+Include, at most, 15 movies.
 
 Your response should look similar to:
 \`\`\`json
@@ -132,12 +131,17 @@ Your response should look similar to:
     ])
   })
 
-  // const response = await anthropic.prompt(system, JSON.stringify(moviesData))
-  const response = await google.prompt(system, JSON.stringify(moviesData))
-
-  const suggestedMovies = _.map(response, id => movies.find(movie => movie.id === id))
-
-  return suggestedMovies
+  try {
+    const response = await ai.prompt(system, JSON.stringify(moviesData))
+    return _.map(response, id => movies.find(movie => movie.id === id))
+  } catch (e) {
+    console.error('AI movie evaluation failed, fallback to raw popularity.', e.message)
+    return _.chain(movies)
+      .filter(m => !!m.title)
+      .orderBy(['vote_count', 'popularity'], ['desc', 'desc'])
+      .take(15)
+      .value()
+  }
 }
 
 const sanatizeForResponse = function (movies) {
@@ -254,10 +258,15 @@ module.exports = (function () {
   }
 
   ListBuilder.prototype.evaluate = function (opts = {}) {
+    const limit = opts.limit ? parseInt(opts.limit, 10) : undefined
+
     return Promise
       .resolve(getMovies())
       .then(rejectArrayValues('genres', opts.exclude_genres))
       .then(evaluateMovies)
+      .then(function (movies) {
+        return limit ? _.take(movies, limit) : movies
+      })
       .then(sanatizeForResponse)
   }
 

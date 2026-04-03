@@ -1,8 +1,9 @@
-# popular-movies
+# popular-movies (Fork)
 
-Popular Movies uses LLMs to evaluate the popularity of movies that are released
-and are less than 4 months old. Popular Movies considers a multitude of data points
-such as ratings, popularity, production companies, actors, and more.
+> [!NOTE]
+> This is a fork of the original [sjlu/popular-movies](https://github.com/sjlu/popular-movies) project, extended with additional functionality including Anime integration.
+
+Popular Movies uses LLMs to evaluate the popularity of movies and anime. It considers a multitude of data points such as ratings, popularity, production companies, actors, and real-time community hype.
 
 ## Usage
 
@@ -22,57 +23,67 @@ https://popular-movies-data.stevenlu.com/movies.json
     remove based on the list no longer displaying a particular movie
   * Subject to fair use; excessive usage will be rate limited
 
-If you're looking for historical files, you can amend a date to the
-main file like so:
+## Popular Anime
+
+This fork introduces a new `/anime` endpoint that aggregates data from multiple sources:
+- **AniList**: Metadata, seasonal trending, and popularity.
+- **MyAnimeList (via Jikan)**: Global scores and consensus.
+- **Kitsu**: Community ratings and trending status.
+- **Reddit (r/anime)**: Weekly episode karma and discussion hype.
+- **Simkl**: Peer trending and cross-platform popularity.
 
 ```
-https://popular-movies-data.stevenlu.com/movies-20191202.json
+http://localhost:3000/anime
 ```
 
-_This file is only available from December 2, 2019 onwards._
+Parameters:
+- `anticipated=true`: Set to true to include shows that haven't aired yet (defaults to false).
+- `include_genres=action,sci-fi`: Comma-separated list of genres to include.
+- `exclude_genres=romance,slice of life`: Comma-separated list of genres to exclude.
+- `include_tags=cyberpunk,post_apocalyptic`: Comma-separated list of granular AniList tags to include.
+- `exclude_tags=horror,supernatural`: Comma-separated list of granular AniList tags to exclude.
+- `limit=5`: Limit the number of results returned.
 
-## All Movies
+## Data Aggregation
 
-There is also a file that includes all movies. This file is not filtered or evaluated.
+The service aggregates the following data points for evaluation:
 
-```
-https://popular-movies-data.stevenlu.com/all-movies.json
-```
+### Movies
+- **Metadata (TMDB)**: Budget, Revenue, Production Companies, Genres, Release Date.
+- **Cast/Crew (TMDB)**: Top 3 Lead Actors, Director, Writer.
+- **Ratings**: Metacritic Score, Rotten Tomatoes Score, IMDb Rating, IMDb Vote Count, TMDB Average Vote, TMDB Vote Count.
+- **Popularity**: TMDB Popularity Metric.
 
-There are also several variations of this file that are filtered by different
-rating websites.
+### Anime
+- **Metadata (AniList)**: Title, Studio, Genres, Granular Tags, Description, Status.
+- **Consensus Scores**: MyAnimeList Score, AniList Average Score, Kitsu Average Rating.
+- **Hype Signals**: Reddit Weekly Karma (via AnimeKarmaList), AniList Popularity & Trending.
+- **Platform Signals**: Simkl Trending (Peer-based popularity).
 
-| File | Description |
-| -- | -- |
-| [movies-metacritic-min50.json](https://popular-movies-data.stevenlu.com/movies-metacritic-min50.json) | Movies with a minimum score of 50 on Metacritic |
-| [movies-metacritic-min60.json](https://popular-movies-data.stevenlu.com/movies-metacritic-min60.json) | Movies with a minimum score of 60 on Metacritic |
-| [movies-metacritic-min70.json](https://popular-movies-data.stevenlu.com/movies-metacritic-min70.json) | Movies with a minimum score of 70 on Metacritic |
-| [movies-metacritic-min80.json](https://popular-movies-data.stevenlu.com/movies-metacritic-min80.json) | Movies with a minimum score of 80 on Metacritic |
-| [movies-imdb-min5.json](https://popular-movies-data.stevenlu.com/movies-imdb-min5.json) | Movies with a minimum score of 5 on IMDB |
-| [movies-imdb-min6.json](https://popular-movies-data.stevenlu.com/movies-imdb-min6.json) | Movies with a minimum score of 6 on IMDB |
-| [movies-imdb-min7.json](https://popular-movies-data.stevenlu.com/movies-imdb-min7.json) | Movies with a minimum score of 7 on IMDB |
-| [movies-imdb-min8.json](https://popular-movies-data.stevenlu.com/movies-imdb-min8.json) | Movies with a minimum score of 8 on IMDB |
-| [movies-rottentomatoes-min50.json](https://popular-movies-data.stevenlu.com/movies-rottentomatoes-min50.json) | Movies with a minimum score of 50 on Rotten Tomatoes |
-| [movies-rottentomatoes-min60.json](https://popular-movies-data.stevenlu.com/movies-rottentomatoes-min60.json) | Movies with a minimum score of 60 on Rotten Tomatoes |
-| [movies-rottentomatoes-min70.json](https://popular-movies-data.stevenlu.com/movies-rottentomatoes-min70.json) | Movies with a minimum score of 70 on Rotten Tomatoes |
-| [movies-rottentomatoes-min80.json](https://popular-movies-data.stevenlu.com/movies-rottentomatoes-min80.json) | Movies with a minimum score of 80 on Rotten Tomatoes |
+## LLM Evaluation
 
+The evaluation logic is unified across both Movies and Anime services. It supports multiple providers via `lib/ai.js`:
+- **Google GenAI (Gemini)**: Primary provider if `GEMINI_API_KEY` is present.
+- **Anthropic (Claude 3.5 Sonnet)**: Secondary provider if `ANTHROPIC_API_KEY` is present.
+- **Fallback**: If no API keys are provided or evaluation fails, the service falls back to a weighted popularity/score ranking.
 
 ## Develop
 
-* Make sure you are running Node.js and a local instance of Redis
+* Make sure you are running Node.js
 
 * If you want to run it locally you can clone this repository and add a
   `.env` file which includes the following lines
 
     ```
     TMDB_KEY=
+    OMDB_KEY=
+    GEMINI_API_KEY=
+    ANTHROPIC_API_KEY=
     ```
 
-  * https://www.themoviedb.org/documentation/api
+* Then run `npm start` to launch the Express server on port 3000.
 
-* Then run `npm test` and you should see an output of movies showing on
-  your console and the grade it's gotten
+* For containerized deployment, use the provided `Dockerfile`.
 
 ## License
 

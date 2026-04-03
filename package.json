@@ -30,7 +30,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
+    "@google/genai": "^1.48.0",
     "aws-sdk": "^2.1282.0",
+    "axios": "^1.14.0",
     "bluebird": "^3.7.2",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.0.3",
