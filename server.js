@@ -2,7 +2,9 @@ const express = require('express')
 const flatCache = require('flat-cache')
 const Index = require('./index.js')
 const AnimeIndex = require('./lib/anime/index.js')
+const BooksIndex = require('./lib/books/index.js')
 const path = require('path')
+const moment = require('moment')
 
 const app = express()
 
@@ -74,5 +76,26 @@ const handleRequest = async function (req, res, listBuilderClass, cachePrefix) {
 
 app.get('/movies', (req, res) => handleRequest(req, res, Index, 'movies'))
 app.get('/anime', (req, res) => handleRequest(req, res, AnimeIndex, 'anime'))
+app.get('/books', (req, res) => handleRequest(req, res, BooksIndex, 'books'))
+
+// Automated Weekly Sync for Books
+// Run every Wednesday at 7:00 PM
+const runWeeklySync = async () => {
+  const now = moment();
+  // Check if it's Wednesday (day 3) and the hour is 19 (7 PM)
+  if (now.day() === 3 && now.hour() === 19) {
+    console.log('Triggering automated weekly book sync...');
+    try {
+      const booksIndex = new BooksIndex();
+      await booksIndex.sync();
+      console.log('Automated weekly book sync completed successfully.');
+    } catch (err) {
+      console.error('Automated weekly book sync failed:', err.message);
+    }
+  }
+};
+
+// Check every hour
+setInterval(runWeeklySync, 60 * 60 * 1000);
 
 app.listen(3000, () => console.log('Server running on 3000'))
