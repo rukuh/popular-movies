@@ -66,7 +66,7 @@ const getMetacriticRatings = async function (movies) {
   })
 }
 
-const evaluateMovies = async function (movies) {
+const evaluateMovies = async function (movies, disliked_genres = []) {
   const system = `
 You are a movie critic that is given a list of movies released in the last 4 months. Your goal is to suggest and sort order the most popular movies.
 
@@ -94,6 +94,7 @@ When evaluating the popularity of a movie, consider:
 - The number of votes the movie received and the rating of the movie. Be sure to consider the number of votes so that one vote does not skew the results.
 - The production companies of the movie and the quality of the movies they have produced, and how well known the companies are.
 - The actors & directors in the movie and how well known they are.
+${!_.isEmpty(disliked_genres) ? `- I strongly dislike the following genres: ${disliked_genres.join(', ')}. You MUST be extremely aggressive in weighing these negatively. DO NOT include them unless they are generational masterpieces or once-in-a-decade standouts (e.g., Metacritic > 85, Rotten Tomatoes > 95%, or overwhelming critical consensus). If a movie is just "popular" but within these genres, exclude it.` : ''}
 
 A null value means that the data could not be found or isn't publicly available.
 
@@ -259,11 +260,12 @@ module.exports = (function () {
 
   ListBuilder.prototype.evaluate = function (opts = {}) {
     const limit = opts.limit ? parseInt(opts.limit, 10) : undefined
+    const disliked_genres = opts.disliked_genres ? opts.disliked_genres.split(',').map(g => g.trim().toLowerCase()) : []
 
     return Promise
       .resolve(getMovies())
       .then(rejectArrayValues('genres', opts.exclude_genres))
-      .then(evaluateMovies)
+      .then(movies => evaluateMovies(movies, disliked_genres))
       .then(function (movies) {
         return limit ? _.take(movies, limit) : movies
       })
@@ -276,3 +278,4 @@ module.exports = (function () {
 
   return ListBuilder
 })()
+
