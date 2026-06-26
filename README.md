@@ -38,12 +38,15 @@ http://localhost:3000/anime
 
 Parameters:
 - `anticipated=true`: Set to true to include shows that haven't aired yet (defaults to false).
+- `exclude_sequels=true`: Set to true to filter out sequels, spin-offs, and returning seasons of existing franchises (defaults to false).
 - `include_genres=action,sci-fi`: Comma-separated list of genres to include (strict filter).
 - `exclude_genres=romance,slice of life`: Comma-separated list of genres to exclude (strict filter).
 - `disliked_genres=horror`: Comma-separated list of genres to weigh negatively (AI evaluation).
+- `preferred_genres=romance`: Comma-separated list of genres to weigh positively and handle leniently in ratings (AI evaluation).
 - `include_tags=cyberpunk,post_apocalyptic`: Comma-separated list of granular AniList tags to include (strict filter).
 - `exclude_tags=horror,supernatural`: Comma-separated list of granular AniList tags to exclude (strict filter).
 - `disliked_tags=mecha`: Comma-separated list of tags to weigh negatively (AI evaluation).
+- `preferred_tags=school_club`: Comma-separated list of tags to weigh positively and handle leniently in ratings (AI evaluation).
 - `limit=5`: Limit the number of results returned.
 
 ## Data Aggregation
@@ -62,7 +65,7 @@ The service aggregates the following data points for evaluation:
 - **Consensus Scores**: MyAnimeList Score, AniList Average Score, Kitsu Average Rating.
 - **Hype Signals**: Reddit Weekly Karma (via AnimeKarmaList), AniList Popularity & Trending.
 - **Platform Signals**: Simkl Trending (Peer-based popularity).
-- **Preferences**: Supports `disliked_genres` and `disliked_tags` for negative AI weighting.
+- **Preferences**: Supports `disliked_genres` and `disliked_tags` for negative AI weighting, and `preferred_genres` and `preferred_tags` for positive AI weighting.
 
 ## LLM Evaluation
 
