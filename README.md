@@ -67,6 +67,15 @@ The service aggregates the following data points for evaluation:
 - **Platform Signals**: Simkl Trending (Peer-based popularity).
 - **Preferences**: Supports `disliked_genres` and `disliked_tags` for negative AI weighting, and `preferred_genres` and `preferred_tags` for positive AI weighting.
 
+### Seasonal Transition Handling
+
+During seasonal transition windows, the `/anime` endpoint automatically pairs and queries two seasons in parallel to bridge the gap:
+- **End of Season Transition (last 15 days of a season):** Fetches both the *current* ending season and the *upcoming* season.
+- **Start of Season Transition (first 15 days of a season):** Fetches both the *current* starting season and the *previous* season.
+- **Finished Status Retention:** AniList queries fetch shows with `FINISHED` status in addition to `RELEASING` and `NOT_YET_RELEASED`, ensuring recently finished high-quality shows stay in the candidate pool.
+- **Not-Yet-Released Buffer:** When `anticipated=false`, `NOT_YET_RELEASED` shows are allowed to pass through during these transition windows so they can be processed right before they premiere.
+- **AI Contextual Guidelines:** Today's date and season name are passed to the LLM as context, prompting it to prioritize high-quality finished or finishing shows as a buffer rather than filling the list with lower-quality shows.
+
 ## LLM Evaluation
 
 The evaluation logic is unified across both Movies and Anime services. It supports multiple providers via `lib/ai.js`:
