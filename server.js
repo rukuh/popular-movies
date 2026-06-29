@@ -17,13 +17,20 @@ app.get('/health', (req, res) => {
 });
 
 const handleRequest = async function (req, res, listBuilderClass, cachePrefix) {
-  // 2. Create a unique key based on the user's query
-  // e.g., "movies_genre=action&year=2023" becomes the key
-  const cacheKey = `${cachePrefix}_${JSON.stringify(req.query)}`;
+  // Extract limit and clear_cache from query parameters for key normalization
+  const queryParams = { ...req.query };
+  const limit = queryParams.limit ? parseInt(queryParams.limit, 10) : null;
+  const clearCache = queryParams.clear_cache === 'true';
 
-  // 3. Check Cache
+  delete queryParams.limit;
+  delete queryParams.clear_cache;
+
+  // Create a unique key based on the normalized user query (excluding limit/clear_cache)
+  const cacheKey = `${cachePrefix}_${JSON.stringify(queryParams)}`;
+
+  // Check Cache
   const now = Date.now();
-  if (req.query.clear_cache === 'true') {
+  if (clearCache) {
     cache.removeKey(cacheKey);
     console.log(`Cache cleared for key: ${cacheKey}`);
   }
@@ -36,10 +43,12 @@ const handleRequest = async function (req, res, listBuilderClass, cachePrefix) {
       key: cacheKey,
       timestamp: new Date().toISOString()
     }));
-    return res.json(cachedItem.value);
+    const results = cachedItem.value;
+    const finalResults = limit ? results.slice(0, limit) : results;
+    return res.json(finalResults);
   }
 
-  // 4. If not in cache, run your original logic
+  // If not in cache, run evaluation
   console.log(JSON.stringify({
     level: 'info',
     event: 'cache_miss',
@@ -52,16 +61,24 @@ const handleRequest = async function (req, res, listBuilderClass, cachePrefix) {
 
   try {
     const listBuilder = new listBuilderClass()
-    const results = await listBuilder.evaluate(req.query)
+    // Pass original query params so ListBuilder receives them, but evaluate returns full list (if limit is handled in server)
+    // Actually, let's pass req.query so ListBuilder still runs fine, but we cache the full evaluated list.
+    // Wait, if ListBuilder evaluates with limit, it will slice inside the builder and return sliced results.
+    // To cache the full results, we should request evaluation without a limit from the builder!
+    const evalParams = { ...req.query };
+    delete evalParams.limit; // Make sure the builder returns the full list
 
-    // 5. Save result to cache (Expire in 24 hours)
+    const results = await listBuilder.evaluate(evalParams)
+
+    // Save full results to cache (Expire in 24 hours)
     cache.setKey(cacheKey, {
       value: results,
       expiry: now + (24 * 60 * 60 * 1000) // 24 Hours
     });
     cache.save(true); // Persist to disk
 
-    res.json(results)
+    const finalResults = limit ? results.slice(0, limit) : results;
+    res.json(finalResults)
   } catch (error) {
     console.error(JSON.stringify({
       level: 'error',

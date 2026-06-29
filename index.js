@@ -220,14 +220,26 @@ const logger = function (movies) {
   ])
 }
 
+const deduplicateMovies = function (movies) {
+  return _.uniqBy(movies, 'tmdb_id')
+}
+
 module.exports = (function () {
   //
   // Class builder functions to help cache content but be
   // able to filter after the fact with options
   //
   let allMovies = null
+  let cacheTime = null
+  const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 Hours
 
-  const getMovies = function () {
+  const getMovies = function (clearCache = false) {
+    const now = Date.now()
+    if (clearCache || !cacheTime || (now - cacheTime) > CACHE_TTL) {
+      allMovies = null
+      cacheTime = null
+    }
+
     if (allMovies) {
       return allMovies
     }
@@ -243,14 +255,17 @@ module.exports = (function () {
       .tap(logger)
       .tap(function (movies) {
         allMovies = movies
+        cacheTime = Date.now()
       })
   }
 
   const ListBuilder = function () {}
 
   ListBuilder.prototype.filter = function (opts = {}) {
+    const clearCache = opts.clear_cache === 'true'
     return Promise
-      .resolve(getMovies())
+      .resolve(getMovies(clearCache))
+      .then(deduplicateMovies)
       .then(filterByMinValue('metacritic_score', opts.min_metacritic_score))
       .then(filterByMinValue('rt_score', opts.min_rt_score))
       .then(filterByMinValue('imdb_rating', opts.min_imdb_rating))
@@ -259,11 +274,13 @@ module.exports = (function () {
   }
 
   ListBuilder.prototype.evaluate = function (opts = {}) {
+    const clearCache = opts.clear_cache === 'true'
     const limit = opts.limit ? parseInt(opts.limit, 10) : undefined
     const disliked_genres = opts.disliked_genres ? opts.disliked_genres.split(',').map(g => g.trim().toLowerCase()) : []
 
     return Promise
-      .resolve(getMovies())
+      .resolve(getMovies(clearCache))
+      .then(deduplicateMovies)
       .then(rejectArrayValues('genres', opts.exclude_genres))
       .then(movies => evaluateMovies(movies, disliked_genres))
       .then(function (movies) {
