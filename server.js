@@ -115,4 +115,35 @@ const runWeeklySync = async () => {
 // Check every hour
 setInterval(runWeeklySync, 60 * 60 * 1000);
 
-app.listen(3000, () => console.log('Server running on 3000'))
+const server = app.listen(3000, () => console.log('Server running on 3000'))
+
+const gracefulShutdown = (signal) => {
+  console.log(`Received ${signal}, initiating graceful shutdown...`)
+  try {
+    cache.save(true)
+  } catch (err) {
+    console.error('Failed to save cache during shutdown:', err.message)
+  }
+
+  server.close(() => {
+    console.log('HTTP server closed.')
+    process.exit(0)
+  })
+
+  // Force exit if connections do not close in time
+  setTimeout(() => {
+    console.warn('Forcefully exiting after shutdown timeout.')
+    process.exit(0)
+  }, 5000).unref()
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+})
