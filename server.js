@@ -117,7 +117,10 @@ setInterval(runWeeklySync, 60 * 60 * 1000);
 
 const server = app.listen(3000, () => console.log('Server running on 3000'))
 
+let isShuttingDown = false
 const gracefulShutdown = (signal) => {
+  if (isShuttingDown) return
+  isShuttingDown = true
   console.log(`Received ${signal}, initiating graceful shutdown...`)
   try {
     cache.save(true)
